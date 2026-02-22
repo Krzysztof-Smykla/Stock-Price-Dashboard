@@ -94,7 +94,7 @@ Predictions for the S&P 500 index may be more stable than individual stocks beca
 - numpy  
 - scikit-learn  
 - statsmodels (optional)  
-- TensorFlow / PyTorch (for LSTM models)  
+- TensorFlow / PyTorch (for LSTM models) *optional 
 
 ### Data APIs
 - Yahoo Finance API  (yfinance)
