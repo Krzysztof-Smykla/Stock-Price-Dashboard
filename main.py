@@ -21,6 +21,8 @@ plt.xlabel('Date')
 plt.ylabel('Price')
 plt.show()
 
+print(data)
+
 
 
 
