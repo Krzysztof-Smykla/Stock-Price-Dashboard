@@ -63,12 +63,12 @@ plt.show()
 
 close_data = apple.filter(['close'])
 dataset = close_data.values
-training = int(np.ceil(len(dataset) * .95))
-print("TRAINING DATASET", training)
+training = int(np.ceil(len(dataset) * 0.8))
+print("TRAINING DATASET LENGTH: ", training)
 
 # Scaling the dataset to a fixed range (0, 1):
 from sklearn.preprocessing import MinMaxScaler
-scaler = MinMaxScaler(feature_range=(0,1))
+scaler = MinMaxScaler()
 scaled_data = scaler.fit_transform(dataset)
 
 train_data = scaled_data[0:int(training), :]
@@ -87,5 +87,92 @@ y_train = np.array(y_train)
 print(f"X Train: {x_train.shape}, ", f"Y Train:{y_train.shape}")
 
 # Building The Regression Prediction Model
+# Ridge regression introduces a regularization term that shrinks the coefficients, stabilizing predictions.
+# It is a version of linear regression that adds an L2 penalty to control large coefficient values. 
+# https://www.geeksforgeeks.org/machine-learning/what-is-ridge-regression/# 
 
-# Using the scaled training data to train a linear model
+# Using the scaled training data to train a ridge regression model
+from sklearn.linear_model import Ridge
+
+# Defined the regression model as a class
+class RegressionModel:
+    def __init__(self, model):
+        self.model = model
+
+    def fit(self, X, y):
+        self.model.fit(X, y)
+        return self
+
+    def predict(self, X):
+        return self.model.predict(X)
+
+    def coefficients(self):
+        return self.model.coef_
+
+    def intercept(self):
+        return self.model.intercept_
+    
+ridge = Ridge(alpha=0.7)
+
+# The Ridge model instance
+m = RegressionModel(ridge)
+m.fit(x_train, y_train)
+
+print("Coefficients:", m.coefficients())
+print("Intercept:", m.intercept())
+
+# Create the testing dataset
+test_data = scaled_data[training - 60:, :]
+
+x_test = []
+y_test = dataset[training:, :]  # NOT scaled (for final comparison)
+
+for i in range(60, len(test_data)):
+    x_test.append(test_data[i-60:i, 0])
+
+x_test = np.array(x_test)
+
+print("X Test:", x_test.shape)
+print("Y Test:", y_test.shape)
+
+# Price Prediction
+predictions = m.predict(x_test)
+predictions = predictions.reshape(-1, 1)
+predictions = scaler.inverse_transform(predictions)
+
+# Evaluation Metrics
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+import numpy as np
+
+rmse = np.sqrt(mean_squared_error(y_test, predictions))
+mae = mean_absolute_error(y_test, predictions)
+
+# Prediction error
+print("RMSE:", rmse)
+print("MAE:", mae)
+
+# Training error
+train_preds = m.predict(x_train)
+train_rmse = np.sqrt(mean_squared_error(y_train, train_preds))
+train_mae = mean_absolute_error(y_train, train_preds)
+
+print("Train RMSE:", train_rmse)
+print("Train MAE:", train_mae)
+
+# Prediction visualization
+
+train = apple[:training]
+valid = apple[training:].copy()
+valid['Predictions'] = predictions
+
+plt.figure(figsize=(14, 7))
+
+plt.plot(train['date'], train['close'], label='Train')
+plt.plot(valid['date'], valid['close'], label='Actual')
+plt.plot(valid['date'], valid['Predictions'], label='Predicted')
+
+plt.title("Apple Stock Price Prediction (Ridge Regression)")
+plt.xlabel("Date")
+plt.ylabel("Close Price")
+plt.legend()
+plt.show()
