@@ -64,8 +64,28 @@ plt.show()
 close_data = apple.filter(['close'])
 dataset = close_data.values
 training = int(np.ceil(len(dataset) * .95))
-print("Training dataset:", training)
+print("TRAINING DATASET", training)
 
-# Building The Regression Prediction Model:
+# Scaling the dataset to a fixed range (0, 1):
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler(feature_range=(0,1))
+scaled_data = scaler.fit_transform(dataset)
 
+train_data = scaled_data[0:int(training), :]
+# prepare feature and labels
+x_train = []
+y_train = []
 
+# Splitting the training subset equally into x_train and y_train 
+for i in range(60, len(train_data)):
+    x_train.append(train_data[i-60:i, 0])
+    y_train.append(train_data[i, 0])
+
+x_train = np.array(x_train)
+y_train = np.array(y_train)
+
+print(f"X Train: {x_train.shape}, ", f"Y Train:{y_train.shape}")
+
+# Building The Regression Prediction Model
+
+# Using the scaled training data to train a linear model
