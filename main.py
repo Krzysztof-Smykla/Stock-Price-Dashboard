@@ -17,28 +17,69 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 # Provides access to historical stock price data for companies in every major exchange around the world.
 # Historical price data is available for up to 20 years.
 
-# Collect historical training data from yfinance API
+# Dynamic Data Fetching:
 import yfinance as yf
-# Fetching Microsoft ticker from yfinance 
-msft = yf.Ticker('MSFT')
-msft.info
+import pandas as pd
+from datetime import datetime, timedelta
+import logging
+from data_scraper import configure_logging, create_session, fetch_sp500_tickers
 
-print("Microsoft Info ", msft.info)
-print("Microsoft Income statement ",pd.DataFrame(msft.income_stmt))
 
-# A test visualization
-msft.history(period='1mo').plot(y='Close', use_index=True, title='Microsoft Stock Price')
-plt.show()
+def download_training_data(ticker: str, forecast_days: int):
+    """
+    Dynamically download enough data for training
+    based on prediction horizon
+    """
+    history_days = calculate_training_range(forecast_days)
 
-# Fetch historical stock price data for the S&P 500 index
-sp500 = yf.Ticker("^GSPC")
-sp500_history = sp500.history(period='3mo')
-# Visualize the historical data for the S&P 500 index
-sp500_history.plot(y='Close', use_index=True, title='S&P 500 Stock Price')
-plt.show()
+    end_date = datetime.today()
+    start_date = end_date - timedelta(days=int(history_days * 1.5))
+    # The 1.5 multiplier compensates for weekends/holidays in the US
 
-# Importing all S&P 500 tickers from Wikipedia using pandas. 
-# This way we can get the most up-to-date list of S&P 500 constituents 
-# without relying on an API that may have limitations or require authentication. 
-# The Wikipedia page is regularly updated and provides a comprehensive list of the companies included in the S&P 500 index.
+    df = yf.download(
+        ticker,
+        start=start_date.strftime("%Y-%m-%d"),
+        end = end_date.strftime("%Y-%m-%d"),
+        interval="1d",
+        progress=False
+    )
 
+    if df.empty:
+        raise ValueError(f"No data found for {ticker}.")
+    
+    return df.tail(history_days)  # Return only the required training window
+
+def calculate_training_range(forecast_days: int) ->  int:
+    """
+    Determine the required historical window size for training.
+    252 trading days ≈ 1 trading year,
+    8× forecast window gives model signal depth prevents underfitting on short prediction horizons.
+    """
+    return max(252, forecast_days * 8)  
+# At least 1 year of data (252 trading days) or 8X the forecast horizon
+
+def time_series_split(df, train_ratio=0.8):
+    """
+    Split the data into training and testing sets 
+    while preserving time series order.
+    """
+    split_index = int(len(df) * train_ratio)
+    train = df.iloc[:split_index]
+    val = df.iloc[split_index:]
+    return train, val
+
+# Feature Engineering:
+
+
+
+# ---------------------------------------------------------------
+# Main Execution
+
+configure_logging()
+
+# Initialize a session with retry logic for robust web scraping.
+# This session will be used to fetch the list of S&P 500 tickers from wikipedia.
+create_session() 
+
+tickers = fetch_sp500_tickers()
+print(tickers[:10])  # Print the first 10 tickers to verify

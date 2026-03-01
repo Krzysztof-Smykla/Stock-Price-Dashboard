@@ -2,7 +2,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-# import pytorch
 import os
 from datetime import datetime
 
@@ -94,7 +93,7 @@ print(f"X Train: {x_train.shape}, ", f"Y Train:{y_train.shape}")
 # Using the scaled training data to train a ridge regression model
 from sklearn.linear_model import Ridge
 
-# Defined the regression model as a class
+# Define the regression model as a class
 class RegressionModel:
     def __init__(self, model):
         self.model = model
