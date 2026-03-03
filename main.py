@@ -28,7 +28,9 @@ from data_scraper import configure_logging, create_session, fetch_sp500_tickers
 def download_training_data(ticker: str, forecast_days: int):
     """
     Dynamically download enough data for training
-    based on prediction horizon
+    based on prediction horizon.
+    Returns:
+        pd.DataFrame: Historical stock price data for the specified ticker.
     """
     history_days = calculate_training_range(forecast_days)
 
@@ -39,15 +41,23 @@ def download_training_data(ticker: str, forecast_days: int):
     df = yf.download(
         ticker,
         start=start_date.strftime("%Y-%m-%d"),
-        end = end_date.strftime("%Y-%m-%d"),
+        end=end_date.strftime("%Y-%m-%d"),
         interval="1d",
-        progress=False
+        progress=False,
+        group_by="column"
     )
 
     if df.empty:
         raise ValueError(f"No data found for {ticker}.")
-    
-    return df.tail(history_days)  # Return only the required training window
+
+    # 🔹 Remove MultiIndex if present
+    # Some yfinance versions return a MultiIndex with the ticker as the top level.
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+
+    df = df.reset_index()  # optional, if you want Date as column
+
+    return df
 
 def calculate_training_range(forecast_days: int) ->  int:
     """
@@ -83,3 +93,4 @@ create_session()
 
 tickers = fetch_sp500_tickers()
 print(tickers[:10])  # Print the first 10 tickers to verify
+print(download_training_data("AAPL", 30).head().to_csv(sep=',', index=False)) # Test downloading training data for Apple with a 30-day forecast horizon

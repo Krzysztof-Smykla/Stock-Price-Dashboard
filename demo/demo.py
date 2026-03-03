@@ -21,7 +21,7 @@ data.info()
 data.columns = map(str.lower, data.columns)
 
 # converting the 'date' field to a datetime data type
-data['date'] =pd.to_datetime(data['date'])
+data['date']=pd.to_datetime(data['date'])
 data.info()
 
 # Data exploration
